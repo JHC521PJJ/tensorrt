@@ -1,3 +1,10 @@
+/*
+ * @Author: JHC521PJJ 
+ * @Date: 2023-07-31 21:44:27 
+ * @Last Modified by:   JHC521PJJ 
+ * @Last Modified time: 2023-07-31 21:44:27 
+ */
+
 #ifndef __RESULT_TRANS_H__
 #define __RESULT_TRANS_H__
 

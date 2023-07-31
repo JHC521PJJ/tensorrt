@@ -1,3 +1,10 @@
+/*
+ * @Author: JHC521PJJ 
+ * @Date: 2023-07-31 21:43:53 
+ * @Last Modified by:   JHC521PJJ 
+ * @Last Modified time: 2023-07-31 21:43:53 
+ */
+
 #ifndef _LOGGING_H_
 #define _LOGGING_H_
 #pragma warning( disable : 4996 )

@@ -1,3 +1,10 @@
+/*
+ * @Author: JHC521PJJ 
+ * @Date: 2023-07-31 21:43:44 
+ * @Last Modified by:   JHC521PJJ 
+ * @Last Modified time: 2023-07-31 21:43:44 
+ */
+
 #ifndef __INFERENCE_H__
 #define __INFERENCE_H__
 
