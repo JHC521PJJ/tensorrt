@@ -1,12 +1,8 @@
 /*
- * @Author: JHC521PJJ 
+ * @Author: OCR_J 
  * @Date: 2023-05-05 15:24:01 
- * @Last Modified by: JHC521PJJ
- * @Last Modified time: 2023-07-30 20:02:41
- * 
- * https://github.com/JHC521PJJ/tensorrt
- * 
- * A simple timing class with singleton pattern
+ * @Last Modified by:   OCR_J 
+ * @Last Modified time: 2023-05-05 15:24:01 
  */
 
 #ifndef __TIME_H__
@@ -19,35 +15,31 @@ class TimeCount {
 public:
 	using SystemClock = std::chrono::system_clock;
 	using TimePoint = std::chrono::system_clock::time_point;
-
 private:
-	TimePoint m_time;
-	
+	TimePoint time_;
 private:
-	TimeCount() :m_time(TimePoint::min()) {}
-
+	TimeCount() :time_(TimePoint::min()) {}
 public:
 	TimeCount(const TimeCount& other) = delete;
 	TimeCount(TimeCount&& other) = delete;
 	TimeCount& operator=(const TimeCount& other) = delete;
 	TimeCount& operator=(TimeCount&& other) = delete;
 
-	// Singleton pattern
 	static TimeCount& instance() {
-		static TimeCount m_timecount;
-		return m_timecount;
+		static TimeCount time_count;
+		return time_count;
 	}
 
-	void start() noexcept { m_time = SystemClock::now(); }
-	void clear() noexcept { m_time = TimePoint::min(); }
+	void start() noexcept { time_ = SystemClock::now(); }
+	void clear() noexcept { time_ = TimePoint::min(); }
 	bool isStarted() const noexcept {
-		return (m_time.time_since_epoch() != SystemClock::duration(0));
+		return (time_.time_since_epoch() != SystemClock::duration(0));
 	}
 
 	double getTime() const noexcept {
 		if (isStarted()) {
 			SystemClock::duration diff;
-			diff = SystemClock::now() - m_time;
+			diff = SystemClock::now() - time_;
 			return std::chrono::duration<double, std::milli>(diff).count();
 		}
 		return static_cast<double>(0.0);
@@ -57,6 +49,4 @@ public:
 		std::cout << "Take time: " << getTime() << " ms" << "\n";
 	}
 };
-
-
 #endif

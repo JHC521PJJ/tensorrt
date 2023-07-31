@@ -1,17 +1,36 @@
 #include "inference.cuh"
 #include "imagePreprocess.cuh"
-#include "time_count.h"
 #include "npyToVector.h"
 #include "resultTransformate.cuh"
 #include <iostream>
 #include <algorithm>
 
 
-
-Inference::Inference(): m_batch_size(1), m_channel(384), m_out_size(56) {
+Inference::Inference(): m_batch_size(1), m_input_channel(3), m_output_channel(384),
+    m_input_size(256), m_output_size(56) {
     init();
 }
 
+Inference::Inference(int batch_size, int input_channel, int output_channel, int input_size, int output_size)
+    : m_batch_size(batch_size), m_input_channel(input_channel), m_output_channel(output_channel),
+      m_input_size(input_size), m_output_size(output_size) {
+    init();
+}
+
+// Release the memory on the device
+Inference::~Inference() {
+    cudaFree(m_d_teacher_mean); 
+    cudaFree(m_d_teacher_std);
+    cudaFree(m_d_preprocess_output);
+    cudaFree(m_d_tinfer_output);
+    cudaFree(m_d_sinfer_output);
+    cudaFree(m_d_aeinfer_output);
+    cudaFree(m_d_map_st);
+    cudaFree(m_d_map_ae);
+    cudaFree(m_d_combine);
+}
+
+// Initialize member variables, read the onnx model, and allocate memory on the device 
 void Inference::init() {
     std::vector<float> vec_teacher_mean = npyToVector("/mnt/DataDisk02/home/pjj/anomaly_detection/EfficientAD-main/output/2/trainings/mvtec_loco/chip6/t_mean_quantiles.npy");
     std::vector<float> vec_teacher_std = npyToVector("/mnt/DataDisk02/home/pjj/anomaly_detection/EfficientAD-main/output/2/trainings/mvtec_loco/chip6/t_std_quantiles.npy");
@@ -24,16 +43,19 @@ void Inference::init() {
     m_d_st_end_quantiles = q_st_end_quantiles;
     m_d_ae_start_quantiles = q_ae_start_quantiles;
     m_d_ae_end_quantiles = q_ae_end_quantiles;
-    cudaMalloc((void **) &m_d_teacher_mean, sizeof(float) * m_channel);
-    cudaMalloc((void **) &m_d_teacher_std, sizeof(float) * m_channel);
-    cudaMemcpy(m_d_teacher_mean, vec_teacher_mean.data(), sizeof(float) * m_channel, cudaMemcpyHostToDevice);
-    cudaMemcpy(m_d_teacher_std, vec_teacher_std.data(), sizeof(float) * m_channel, cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&m_d_teacher_mean, sizeof(float) * m_output_channel);
+    cudaMalloc((void**)&m_d_teacher_std, sizeof(float) * m_output_channel);
+    cudaMemcpy(m_d_teacher_mean, vec_teacher_mean.data(), sizeof(float) * m_output_channel, cudaMemcpyHostToDevice);
+    cudaMemcpy(m_d_teacher_std, vec_teacher_std.data(), sizeof(float) * m_output_channel, cudaMemcpyHostToDevice);
     
-    cudaMalloc((void**)&m_d_preprocess_output, 256 * 256 * 3 * sizeof(float));
-    cudaMalloc((void**)&m_t_infer_output, 384 * 56 * 56 * sizeof(float));
-    cudaMalloc((void**)&m_s_infer_output, 768 * 56 * 56 * sizeof(float));
-    cudaMalloc((void**)&m_ae_infer_output, 384 * 56 * 56 * sizeof(float));
-
+    cudaMalloc((void**)&m_d_preprocess_output, m_input_size * m_input_size * m_input_channel * sizeof(float));
+    cudaMalloc((void**)&m_d_tinfer_output, m_output_channel * m_output_size * m_output_size * sizeof(float));
+    cudaMalloc((void**)&m_d_sinfer_output, m_output_channel * 2 * m_output_size * m_output_size * sizeof(float));
+    cudaMalloc((void**)&m_d_aeinfer_output, m_output_channel * m_output_size * m_output_size * sizeof(float));
+    cudaMalloc((void**)&m_d_map_st, m_output_channel * m_output_size * m_output_size * sizeof(float));
+    cudaMalloc((void**)&m_d_map_ae, m_output_channel * m_output_size * m_output_size * sizeof(float));
+    cudaMalloc((void**)&m_d_combine, m_output_size * m_output_size * sizeof(float));
+    
     const char* t_onnx = "teacher_final_simp.onnx";
     const char* s_onnx = "student_final_simp.onnx";
     const char* ae_onnx = "autoencoder_final_simp.onnx";
@@ -47,31 +69,39 @@ void Inference::init() {
     m_ae_infer.build();
 }
 
+// Image preprocessing on the GPU
 void Inference::processInput(cv::Mat& image) {
     imagePreprocessingGpu(image, m_d_preprocess_output);
 }
 
+// TRT inference on the GPU
 void Inference::trtInference() {
-    m_teacher_infer.infer_v2(m_d_preprocess_output, m_t_infer_output);
-    m_student_infer.infer_v2(m_d_preprocess_output, m_s_infer_output);
-    m_ae_infer.infer_v2(m_d_preprocess_output, m_ae_infer_output);
+    m_teacher_infer.infer(m_d_preprocess_output, m_d_tinfer_output);
+    m_student_infer.infer(m_d_preprocess_output, m_d_sinfer_output);
+    m_ae_infer.infer(m_d_preprocess_output, m_d_aeinfer_output);
 }
 
+// Processing the output on the GPU
 void Inference::processOutput() {
-    std::vector<float> vec_combined(56 * 56);
-    resultTransformate_v2(
-        m_t_infer_output, m_s_infer_output, m_ae_infer_output, 
+    // std::vector<float> vec_combined(56 * 56);
+    float max_element = 0.0f;
+    resultTransformateGpu(
+        m_d_tinfer_output, m_d_sinfer_output, m_d_aeinfer_output, 
         m_d_teacher_mean, m_d_teacher_std,
+        m_d_map_st, 
+        m_d_map_ae, 
+        m_d_combine, 
         m_d_st_start_quantiles,
         m_d_st_end_quantiles,
         m_d_ae_start_quantiles,
         m_d_ae_end_quantiles,
-        0,
-        vec_combined);
-    auto it_ad_score = std::max_element(vec_combined.begin(), vec_combined.end());
-    std::cout<< "Score: " << *it_ad_score << std::endl;
+        max_element);
+    // auto it_ad_score = std::max_element(vec_combined.begin(), vec_combined.end());
+    // std::cout<< "Score: " << *it_ad_score << std::endl;
+    std::cout<< "Score: " << max_element << std::endl;
 }
 
+// Inference
 void Inference::infer(cv::Mat& image) {
     processInput(image);
     trtInference();

@@ -2,9 +2,9 @@
  * @Author: JHC521PJJ 
  * @Date: 2023-07-24 21:59:01 
  * @Last Modified by: JHC521PJJ
- * @Last Modified time: 2023-07-24 22:01:38
+ * @Last Modified time: 2023-07-30 21:08:05
  * 
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://github.com/JHC521PJJ/tensorrt
  * 
  * This header file is an implementation of the TensorRT inference class, 
  * It draws on examples from official reference documents
@@ -14,6 +14,7 @@
 #ifndef __TRT_RUNNER_H__
 #define __TRT_RUNNER_H__
 
+// Define TRT entrypoints used in common code
 #define DEFINE_TRT_ENTRYPOINTS 1
 #define DEFINE_TRT_LEGACY_PARSER_ENTRYPOINT 0
 #include "argsParser.h"
@@ -31,43 +32,46 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 using namespace nvinfer1;
 using samplesCommon::SampleUniquePtr;
 
-static const char* IN_NAME = "input"; 
-static char* OUT_NAME = "output"; 
-static constexpr int BATCH_SIZE = 1; 
+inline const char* IN_NAME = "input"; 
+inline char* OUT_NAME = "output"; 
+inline constexpr int BATCH_SIZE = 1; 
 
 class TrtInferenceRunner {
 private:
-    samplesCommon::OnnxSampleParams mParams; 
-    nvinfer1::Dims mInputDims;  
-    nvinfer1::Dims mOutputDims; 
-    int mNumber{0};             
+    nvinfer1::Dims m_input_dims;                        // The dimensions of the input to the network
+    nvinfer1::Dims m_output_dims;                       // The dimensions of the output to the network. 
+    std::shared_ptr<nvinfer1::IRuntime> m_runtime;      // The TensorRT runtime used to deserialize the engine
+    std::shared_ptr<nvinfer1::ICudaEngine> m_engine;    // The TensorRT engine used to run the network
 
-    std::shared_ptr<nvinfer1::IRuntime> mRuntime;   
-    std::shared_ptr<nvinfer1::ICudaEngine> mEngine; 
-
-    const char* m_onnx_name; 
-    std::vector<std::string> m_onnx_dirs;
+    const char* m_onnx_name;                // The name of onnx model
+    std::vector<std::string> m_onnx_dirs;   // The path of onnx model
 
 private:
+    // Parses an ONNX model and creates a TensorRT network
     bool constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
         SampleUniquePtr<nvinfer1::INetworkDefinition>& network, 
         SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
         SampleUniquePtr<nvonnxparser::IParser>& parser);
 
 public:
-    TrtInferenceRunner(): mRuntime(nullptr), mEngine(nullptr) {}
+    TrtInferenceRunner(): m_runtime(nullptr), m_engine(nullptr), m_onnx_dirs{} {}
+    ~TrtInferenceRunner() {}
     TrtInferenceRunner(const TrtInferenceRunner& other) = delete;
     TrtInferenceRunner(TrtInferenceRunner&& other) = delete;
     TrtInferenceRunner& operator=(const TrtInferenceRunner& other) = delete;
     TrtInferenceRunner& operator=(TrtInferenceRunner&& other) = delete;
-    ~TrtInferenceRunner() {}
-
+    
+    // Import the onnx model from disk
     void loadOnnxModel(const char* onnx_name, const char* onnx_dirs);
+    // Function builds the network engine
     bool build();
+    // Runs the TensorRT inference engine by a synchronous manner
+    bool infer(float* d_preprocess_output, float* d_output);
     bool infer_v2(float* d_preprocess_output, float* d_output);
 };
 
@@ -76,6 +80,8 @@ void TrtInferenceRunner::loadOnnxModel(const char* onnx_name, const char* onnx_d
     m_onnx_dirs.push_back(onnx_dirs);
 }
 
+// This function creates the Onnx network by parsing the Onnx model and builds the engine 
+// return true if the engine was created successfully and false otherwise
 bool TrtInferenceRunner::build() {
     auto builder = SampleUniquePtr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(sample::gLogger.getTRTLogger()));
     if (!builder) { return false;}
@@ -101,20 +107,23 @@ bool TrtInferenceRunner::build() {
     SampleUniquePtr<IHostMemory> plan{builder->buildSerializedNetwork(*network, *config)};
     if (!plan) { return false; }
 
-    mRuntime = std::shared_ptr<nvinfer1::IRuntime>(createInferRuntime(sample::gLogger.getTRTLogger()));
-    if (!mRuntime) { return false;}
+    m_runtime = std::shared_ptr<nvinfer1::IRuntime>(createInferRuntime(sample::gLogger.getTRTLogger()));
+    if (!m_runtime) { return false;}
 
-    mEngine = std::shared_ptr<nvinfer1::ICudaEngine>(mRuntime->deserializeCudaEngine(plan->data(), plan->size()), samplesCommon::InferDeleter());
-    if (!mEngine) { return false;}
+    m_engine = std::shared_ptr<nvinfer1::ICudaEngine>(m_runtime->deserializeCudaEngine(plan->data(), plan->size()), samplesCommon::InferDeleter());
+    if (!m_engine) { return false;}
 
-    mInputDims = network->getInput(0)->getDimensions();
-    mOutputDims = network->getOutput(0)->getDimensions();
-    sample::gLogInfo << "mInputDims: " << mInputDims.d[0]<<" "<< mInputDims.d[1]<<" " << mInputDims.d[2]<<" " << mInputDims.d[3] << std::endl;
-    sample::gLogInfo << "mOutputDims: " << mOutputDims.d[0]<<" " << mOutputDims.d[1]<<" " << mOutputDims.d[2]<<" " << mOutputDims.d[3] << std::endl;
+    m_input_dims = network->getInput(0)->getDimensions();
+    m_output_dims = network->getOutput(0)->getDimensions();
+    // Print the dimensions of the input and output
+    // sample::gLogInfo << "Input Dims: " << m_input_dims.d[0]<<" "<< m_input_dims.d[1]<<" " << m_input_dims.d[2]<<" " << m_input_dims.d[3] << std::endl;
+    // sample::gLogInfo << "Output Dims: " << m_output_dims.d[0]<<" " << m_output_dims.d[1]<<" " << m_output_dims.d[2]<<" " << m_output_dims.d[3] << std::endl;
 
     return true;
 }
 
+// Uses a ONNX parser to create the Onnx Network and marks the output layers
+// return true if the network was created successfully and false otherwise
 bool TrtInferenceRunner::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
     SampleUniquePtr<nvinfer1::INetworkDefinition>& network, SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
     SampleUniquePtr<nvonnxparser::IParser>& parser) {
@@ -127,18 +136,23 @@ bool TrtInferenceRunner::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& b
     return true;
 }
 
-bool TrtInferenceRunner::infer_v2(float* d_preprocess_output, float* d_output) {
+// Allocates the buffer, sets inputs and executes the engine
+// return true if infering successfully and false otherwise
+bool TrtInferenceRunner::infer(float* d_preprocess_output, float* d_output) {
     void* buffers[2]; 
-    const int32_t inputIndex = mEngine->getBindingIndex(IN_NAME); 
-    const int32_t outputIndex = mEngine->getBindingIndex(OUT_NAME); 
+    const int32_t inputIndex = m_engine->getBindingIndex(IN_NAME); 
+    const int32_t outputIndex = m_engine->getBindingIndex(OUT_NAME); 
 
-    auto context = SampleUniquePtr<nvinfer1::IExecutionContext>(mEngine->createExecutionContext());
+    auto context = SampleUniquePtr<nvinfer1::IExecutionContext>(m_engine->createExecutionContext());
+    if (!context) { return false;}
 
-    cudaMalloc(&buffers[inputIndex], mInputDims.d[0] * mInputDims.d[1] * mInputDims.d[2] * mInputDims.d[3] * sizeof(float)); 
-    cudaMalloc(&buffers[outputIndex], mOutputDims.d[0] * mOutputDims.d[1] * mOutputDims.d[2] * mOutputDims.d[3] * sizeof(float)); 
-    cudaMemcpy(buffers[inputIndex], d_preprocess_output, mInputDims.d[0] * mInputDims.d[1] * mInputDims.d[2] * mInputDims.d[3] * sizeof(float), cudaMemcpyDeviceToDevice); 
-    context->executeV2(buffers); 
-    cudaMemcpy(d_output, buffers[outputIndex], mOutputDims.d[0] * mOutputDims.d[1] * mOutputDims.d[2] * mOutputDims.d[3] * sizeof(float), cudaMemcpyDeviceToDevice);  
+    // Memcpy from device input array to device input buffers
+    cudaMalloc(&buffers[inputIndex], m_input_dims.d[0] * m_input_dims.d[1] * m_input_dims.d[2] * m_input_dims.d[3] * sizeof(float)); 
+    cudaMalloc(&buffers[outputIndex], m_output_dims.d[0] * m_output_dims.d[1] * m_output_dims.d[2] * m_output_dims.d[3] * sizeof(float)); 
+    cudaMemcpy(buffers[inputIndex], d_preprocess_output, m_input_dims.d[0] * m_input_dims.d[1] * m_input_dims.d[2] * m_input_dims.d[3] * sizeof(float), cudaMemcpyDeviceToDevice); 
+    bool status = context->executeV2(buffers); 
+    if (!status) { return false;}
+    cudaMemcpy(d_output, buffers[outputIndex], m_output_dims.d[0] * m_output_dims.d[1] * m_output_dims.d[2] * m_output_dims.d[3] * sizeof(float), cudaMemcpyDeviceToDevice);  
 
     return true;
 }

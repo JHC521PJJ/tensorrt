@@ -1,14 +1,3 @@
-/*
- * @Author: JHC521PJJ 
- * @Date: 2023-07-26 18:01:34 
- * @Last Modified by: JHC521PJJ
- * @Last Modified time: 2023-07-26 18:01:59
- * 
- * https://github.com/JHC521PJJ/tensorrt
- * 
- * This header file is an implementation of image preprocessing on the CPU
- */
-
 #ifndef __IMG_PREPROCESS_H__
 #define __IMG_PREPROCESS_H__
 

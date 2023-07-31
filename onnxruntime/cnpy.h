@@ -1,13 +1,6 @@
-/*
- * @misc{Carl Rogers2018,
- * author = {Carl Rogersr},
- * title = {cnpy},
- * year = {2018},
- * publisher = {GitHub},
- * journal = {GitHub repository},
- * howpublished = {\url{https://github.com/rogersce/cnpy}},
- * }
- */
+//Copyright (C) 2011  Carl Rogers
+//Released under MIT License
+//license available in LICENSE file, or at http://www.opensource.org/licenses/mit-license.php
 
 #ifndef LIBCNPY_H_
 #define LIBCNPY_H_
