@@ -4,6 +4,7 @@
 #include "resultTransformate.cuh"
 #include <iostream>
 #include <algorithm>
+#include <omp.h>
 
 
 Inference::Inference(): m_batch_size(1), m_input_channel(3), m_output_channel(384),
@@ -75,15 +76,34 @@ void Inference::processInput(cv::Mat& image) {
 }
 
 // TRT inference on the GPU
-void Inference::trtInference() {
+void Inference::trtInfer() {
     m_teacher_infer.infer(m_d_preprocess_output, m_d_tinfer_output);
     m_student_infer.infer(m_d_preprocess_output, m_d_sinfer_output);
     m_ae_infer.infer(m_d_preprocess_output, m_d_aeinfer_output);
 }
 
+// Asynchronous infering by openMP
+void Inference::trtInferAsyn() {
+    omp_set_num_threads(3);
+    #pragma omp sections
+    {
+        #pragma omp section 
+        {
+            m_teacher_infer.infer(m_d_preprocess_output, m_d_tinfer_output);
+        }
+        #pragma omp section 
+        {
+            m_student_infer.infer(m_d_preprocess_output, m_d_sinfer_output);
+        }
+        #pragma omp section 
+        {
+            m_ae_infer.infer(m_d_preprocess_output, m_d_aeinfer_output);
+        }
+    }
+}
+
 // Processing the output on the GPU
 void Inference::processOutput() {
-    // std::vector<float> vec_combined(56 * 56);
     float max_element = 0.0f;
     resultTransformateGpu(
         m_d_tinfer_output, m_d_sinfer_output, m_d_aeinfer_output, 
@@ -96,15 +116,15 @@ void Inference::processOutput() {
         m_d_ae_start_quantiles,
         m_d_ae_end_quantiles,
         max_element);
-    // auto it_ad_score = std::max_element(vec_combined.begin(), vec_combined.end());
-    // std::cout<< "Score: " << *it_ad_score << std::endl;
+        
     std::cout<< "Score: " << max_element << std::endl;
 }
 
 // Inference
 void Inference::infer(cv::Mat& image) {
     processInput(image);
-    trtInference();
+    // trtInfer();
+    trtInferAsyn();
     processOutput();
 }
 

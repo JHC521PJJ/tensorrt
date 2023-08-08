@@ -3,6 +3,8 @@
  * @Date: 2023-07-31 21:44:11 
  * @Last Modified by:   JHC521PJJ 
  * @Last Modified time: 2023-07-31 21:44:11 
+ * 
+ * https://github.com/JHC521PJJ/tensorrt
  */
 
 #ifndef __ONNXRUN_H__
@@ -19,10 +21,18 @@ public:
     using VecInt64 = std::vector<int64_t>;
 
 private:
-    static Ort::Env env_;
-    std::shared_ptr<Ort::Session> session_;
-    Ort::SessionOptions session_options_;
-    Ort::AllocatorWithDefaultOptions allocator_;
+    static Ort::Env m_env;
+    std::shared_ptr<Ort::Session> m_session;
+    Ort::SessionOptions m_session_options;
+    Ort::AllocatorWithDefaultOptions m_allocator;
+
+private:
+    size_t getSessionInputCount();
+    size_t getSessionOutputCount();
+    VecInt64 getSessionInputNodeDims(size_t index);
+    VecInt64 getSessionOutputNodeDims(size_t index);
+    const char* getSessionInputName(size_t index);
+    const char* getSessionOutputName(size_t index);
     
 public:
     OnnxInferenceRunner();
@@ -37,13 +47,6 @@ public:
     void setSessionCUDA(const int device_id);
     void printModelInfo();
     VecFloat infer(VecFloat& input_vector);
-
-    size_t getSessionInputCount();
-    size_t getSessionOutputCount();
-    VecInt64 getSessionInputNodeDims(size_t index);
-    VecInt64 getSessionOutputNodeDims(size_t index);
-    const char* getSessionInputName(size_t index);
-    const char* getSessionOutputName(size_t index);
 };
 
 #endif

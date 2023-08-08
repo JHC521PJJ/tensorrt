@@ -3,6 +3,8 @@
  * @Date: 2023-07-31 21:43:44 
  * @Last Modified by:   JHC521PJJ 
  * @Last Modified time: 2023-07-31 21:43:44 
+ * 
+ * https://github.com/JHC521PJJ/tensorrt
  */
 
 #ifndef __INFERENCE_H__
@@ -23,11 +25,11 @@ private:
     int m_input_size;                   // The size of input image
     int m_output_size;                  // The size of output image
     
-    OnnxInferenceRunner m_teacher_infer; // The TRT inference class of teacher networks
-    OnnxInferenceRunner m_student_infer; // The TRT inference class of student network
-    OnnxInferenceRunner m_ae_infer;      // The TRT inference class of auto encorder network
+    OnnxInferenceRunner m_teacher_infer; // The Otr inference class of teacher networks
+    OnnxInferenceRunner m_student_infer; // The Otr inference class of student network
+    OnnxInferenceRunner m_ae_infer;      // The Otr inference class of auto encorder network
 
-    // Initializes temporary variables, allocates their memory on the device
+    // Initializes temporary variables
     VecFloat m_teacher_mean; 
     VecFloat m_teacher_std;
     VecFloat m_preprocess_output;
@@ -46,11 +48,11 @@ private:
     void init();
     void processInput(cv::Mat& image);
     void processOutput();
-    void ortInference();
+    void otrInfer();
 
 public:
     Inference();
-    // Inference(int batch_size, int input_channel, int output_channel, int input_size, int output_size);
+    Inference(int batch_size, int input_channel, int output_channel, int input_size, int output_size);
     ~Inference();
     Inference(const Inference& other) = delete;
     Inference(Inference&& other) = delete;

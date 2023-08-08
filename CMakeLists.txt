@@ -24,9 +24,17 @@ message(STATUS "    version: ${OpenCV_VERSION}")
 message(STATUS "    libraries: ${OpenCV_LIBS}")
 message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
+find_package(OpenMP REQUIRED)
+if(OPENMP_FOUND)
+    message("Found OpenMP")
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS})
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS}") 
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_CXX_FLAGS}") 
+endif()
+
 set(CMAKE_CXX_STANDARD 14)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_86,code=sm_86)
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14 -O2)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14 -O2 -Xcompiler -fopenmp)
 
 cuda_add_library(process_gpu SHARED ${CUDA_HEADERS} ${CUDA_SOURCES})
 target_link_libraries(process_gpu ${OpenCV_LIBS})

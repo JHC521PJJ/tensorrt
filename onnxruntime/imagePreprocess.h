@@ -3,6 +3,10 @@
  * @Date: 2023-07-31 21:43:34 
  * @Last Modified by:   JHC521PJJ 
  * @Last Modified time: 2023-07-31 21:43:34 
+ * 
+ * https://github.com/JHC521PJJ/tensorrt
+ * 
+ * This header file is an implementation of image preprocessing by OpenCV
  */
 
 #ifndef __IMG_PREPROCESS_H__
@@ -16,8 +20,9 @@
 #include <iostream>
 #include <vector>
 
-constexpr int input_size = 256;
+inline constexpr int input_size = 256;
 
+// Normalized three channels
 inline cv::Mat normalizePerChannel(const cv::Mat& imageData, std::vector<float> means, std::vector<float> std) {
     cv::Mat normalizedImage;
     cv::Mat channels[3];
@@ -30,6 +35,7 @@ inline cv::Mat normalizePerChannel(const cv::Mat& imageData, std::vector<float> 
     return normalizedImage;
 }
 
+// Image to vector 
 inline std::vector<float> imgToVector(cv::Mat& img){
     img = img.reshape(1, 1);
     std::vector<float> vec{};
@@ -54,7 +60,7 @@ inline std::vector<float> imagePreprocessing(cv::Mat& image) {
 
 template<typename T>
 inline void printVector(const std::vector<T>& vec) {
-    for(int i = 0; i < 5; ++i) {
+    for(int i = 0; i < 10; ++i) {
         std::cout<<vec[i]<<" "; 
     }
     std::cout<<"\n";

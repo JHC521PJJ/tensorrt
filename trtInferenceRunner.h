@@ -72,7 +72,6 @@ public:
     bool build();
     // Runs the TensorRT inference engine by a synchronous manner
     bool infer(float* d_preprocess_output, float* d_output);
-    bool infer_v2(float* d_preprocess_output, float* d_output);
 };
 
 void TrtInferenceRunner::loadOnnxModel(const char* onnx_name, const char* onnx_dirs) {

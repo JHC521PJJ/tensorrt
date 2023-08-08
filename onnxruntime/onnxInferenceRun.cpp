@@ -18,26 +18,26 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec) {
     return os;
 }
 
-static std::string log_id_{};
-Ort::Env OnnxInferenceRunner::env_ = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, log_id_.c_str());
+static std::string log_id{};
+Ort::Env OnnxInferenceRunner::m_env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, log_id.c_str());
 
 OnnxInferenceRunner::OnnxInferenceRunner() {
-    session_options_.SetIntraOpNumThreads(4); 
-    session_options_.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    m_session_options.SetIntraOpNumThreads(4); 
+    m_session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
 }
 
 OnnxInferenceRunner::~OnnxInferenceRunner(){}
 
 void OnnxInferenceRunner::loadModel(const std::string& model_path) {
-    session_ = std::make_shared<Ort::Session>(env_, model_path.c_str(), session_options_);
+    m_session = std::make_shared<Ort::Session>(m_env, model_path.c_str(), m_session_options);
 
     if(model_path == "") {
         ocr::log_error << "Onnx model path is error" << std::endl;
     }
-    else if (env_ == nullptr) {
+    else if (m_env == nullptr) {
         ocr::log_error << "Onnx env not initialized" << std::endl;
     }
-    else if (session_ == nullptr) {
+    else if (m_session == nullptr) {
         ocr::log_error << "Onnx model not initialized" << std::endl;
     }
     else {
@@ -46,36 +46,36 @@ void OnnxInferenceRunner::loadModel(const std::string& model_path) {
 }
 
 void OnnxInferenceRunner::setSessionNumThreads(const int num) {
-    session_options_.SetIntraOpNumThreads(1);
+    m_session_options.SetIntraOpNumThreads(1);
 }
 
 void OnnxInferenceRunner::setSessionCUDA(const int device_id) {
-    OrtSessionOptionsAppendExecutionProvider_CUDA(session_options_, device_id);
+    OrtSessionOptionsAppendExecutionProvider_CUDA(m_session_options, device_id);
     ocr::log_info << "Onnx model has loaded in cuda: " << device_id << std::endl;
 }
 
 size_t OnnxInferenceRunner::getSessionInputCount() {
-    return session_->GetInputCount();
+    return m_session->GetInputCount();
 }
 
 size_t OnnxInferenceRunner::getSessionOutputCount() {
-    return session_->GetOutputCount();
+    return m_session->GetOutputCount();
 }
 
 VecInt64 OnnxInferenceRunner::getSessionInputNodeDims(size_t index) {
-    return session_->GetInputTypeInfo(index).GetTensorTypeAndShapeInfo().GetShape();
+    return m_session->GetInputTypeInfo(index).GetTensorTypeAndShapeInfo().GetShape();
 }
 
 VecInt64 OnnxInferenceRunner::getSessionOutputNodeDims(size_t index) {
-    return session_->GetOutputTypeInfo(index).GetTensorTypeAndShapeInfo().GetShape();
+    return m_session->GetOutputTypeInfo(index).GetTensorTypeAndShapeInfo().GetShape();
 }
 
 const char* OnnxInferenceRunner::getSessionInputName(size_t index) {
-    return session_->GetInputName(index, allocator_);
+    return m_session->GetInputName(index, m_allocator);
 }
 
 const char* OnnxInferenceRunner::getSessionOutputName(size_t index) {
-    return session_->GetOutputName(index, allocator_);
+    return m_session->GetOutputName(index, m_allocator);
 }
 
 void OnnxInferenceRunner::printModelInfo() {
@@ -108,7 +108,7 @@ VecFloat OnnxInferenceRunner::infer(VecFloat& input_vector) {
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
     Ort::Value onnx_input = Ort::Value::CreateTensor<float>(memory_info, input_vector.data(), input_size_count, input_dim.data(), input_dim.size());   
     
-    auto onnx_output = session_->Run(Ort::RunOptions{ nullptr }, input_name.data(), &onnx_input, input_name.size(),output_name.data(), output_name.size());
+    auto onnx_output = m_session->Run(Ort::RunOptions{ nullptr }, input_name.data(), &onnx_input, input_name.size(),output_name.data(), output_name.size());
     float* p_onnx_output = onnx_output[0].GetTensorMutableData<float>();
 
     if(p_onnx_output != nullptr) {

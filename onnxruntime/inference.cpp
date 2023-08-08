@@ -12,18 +12,15 @@ Inference::Inference(): m_batch_size(1), m_input_channel(3), m_output_channel(38
     init();
 }
 
-// Inference::Inference(int batch_size, int input_channel, int output_channel, int input_size, int output_size)
-//     : m_batch_size(batch_size), m_input_channel(input_channel), m_output_channel(output_channel),
-//       m_input_size(input_size), m_output_size(output_size) {
-//     init();
-// }
-
-// Release the memory on the device
-Inference::~Inference() {
-
+Inference::Inference(int batch_size, int input_channel, int output_channel, int input_size, int output_size)
+    : m_batch_size(batch_size), m_input_channel(input_channel), m_output_channel(output_channel),
+      m_input_size(input_size), m_output_size(output_size) {
+    init();
 }
 
-// Initialize member variables, read the onnx model, and allocate memory on the device 
+Inference::~Inference() {}
+
+// Initialize member variables, read the onnx model, and allocate memory. 
 void Inference::init() {
     const std::string t_model_path = "/home/pjj/pythoncode/EfficientAD-main/onnx/chip4/teacher_final.onnx";
     const std::string s_model_path = "/home/pjj/pythoncode/EfficientAD-main/onnx/chip4/student_final.onnx";
@@ -44,19 +41,19 @@ void Inference::init() {
     m_q_ae_end_quantiles = npyToValue("/home/pjj/pythoncode/EfficientAD-main/output/4/trainings/mvtec_loco/chip4/q_ae_end_quantiles.npy");
 }
 
-// Image preprocessing on the GPU
+// Image preprocessing on the CPU
 void Inference::processInput(cv::Mat& image) {
     m_preprocess_output = imagePreprocessing(image);
 }
 
 // TRT inference on the GPU
-void Inference::ortInference() {
+void Inference::otrInfer() {
     m_tinfer_output = m_teacher_infer.infer(m_preprocess_output);
     m_sinfer_output = m_student_infer.infer(m_preprocess_output);
     m_aeinfer_output = m_ae_infer.infer(m_preprocess_output);
 }
 
-// Processing the output on the GPU
+// Processing the output on the CPU
 void Inference::processOutput() {
     for(int c = 0; c < 384; ++c) {
         for(int i = 0; i < 56 * 56; ++i) {
@@ -73,12 +70,15 @@ void Inference::processOutput() {
     if(*it_ad_score > 1.0f) {
         ocr::log_info << "[Defect]" << std::endl;
     }
+    else {
+        ocr::log_info << "[Normal]" << std::endl;
+    }
 }
 
 // Inference
 void Inference::infer(cv::Mat& image) {
     processInput(image);
-    ortInference();
+    otrInfer();
     processOutput();
 }
 

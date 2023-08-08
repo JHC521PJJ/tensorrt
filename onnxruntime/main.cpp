@@ -3,6 +3,8 @@
  * @Date: 2023-07-31 21:44:01 
  * @Last Modified by:   JHC521PJJ 
  * @Last Modified time: 2023-07-31 21:44:01 
+ * 
+ * https://github.com/JHC521PJJ/tensorrt
  */
 
 #include "inference.h"
@@ -28,7 +30,9 @@ int main(){
         ocr::log_info << vec_file[i] << std::endl;
 
         TimeCount::instance().start();
+
         infer_run.infer(image);
+        
         auto inference_time_count = TimeCount::instance().getTime();
         ocr::log_info << "All takes time: " << inference_time_count << "ms" << std::endl;
         vec_time_avg.emplace_back(inference_time_count);

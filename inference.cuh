@@ -49,7 +49,8 @@ private:
     void init();
     void processInput(cv::Mat& image);
     void processOutput();
-    void trtInference();
+    void trtInfer();
+    void trtInferAsyn();
 
 public:
     Inference();

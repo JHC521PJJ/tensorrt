@@ -3,6 +3,8 @@
  * @Date: 2023-07-31 21:43:53 
  * @Last Modified by:   JHC521PJJ 
  * @Last Modified time: 2023-07-31 21:43:53 
+ * 
+ * https://github.com/JHC521PJJ/tensorrt
  */
 
 #ifndef _LOGGING_H_
@@ -30,10 +32,10 @@ enum class LogLevel {
 
 class LogStreamBuffer : public std::stringbuf {
 private:
-    LogLevel log_level_;
+    LogLevel m_log_level;
 public:
-    LogStreamBuffer() :log_level_(LogLevel::LOG_LEVEL_INFO) {}
-    LogStreamBuffer(LogLevel log_level) :log_level_(log_level) {}
+    LogStreamBuffer() :m_log_level(LogLevel::LOG_LEVEL_INFO) {}
+    LogStreamBuffer(LogLevel log_level) :m_log_level(log_level) {}
 
     LogStreamBuffer(const LogStreamBuffer& other) = delete;
     LogStreamBuffer(LogStreamBuffer& other) = delete;
@@ -62,7 +64,7 @@ public:
         std::cout << std::setw(2) << std::setfill('0') << tm_local->tm_min << ":";
         std::cout << std::setw(2) << std::setfill('0') << tm_local->tm_sec << "] ";
 
-        switch(log_level_) {
+        switch(m_log_level) {
         case LogLevel::LOG_LEVEL_NONE:
             break;
         case LogLevel::LOG_LEVEL_INFO:
@@ -83,12 +85,12 @@ public:
 
 class OnnxLog : public std::ostream {
 private:
-    LogStreamBuffer buffer_;
-	std::string log_msg_;
+    LogStreamBuffer m_buffer;
+	std::string m_log_msg;
 
 public:
-    OnnxLog() : buffer_(LogLevel::LOG_LEVEL_INFO), std::ostream(&buffer_), log_msg_{} {}
-    OnnxLog(LogLevel log_level) : buffer_(log_level), std::ostream(&buffer_), log_msg_{} {}
+    OnnxLog() : m_buffer(LogLevel::LOG_LEVEL_INFO), std::ostream(&m_buffer), m_log_msg{} {}
+    OnnxLog(LogLevel log_level) : m_buffer(log_level), std::ostream(&m_buffer), m_log_msg{} {}
 
     OnnxLog(const OnnxLog& other) = delete;
     OnnxLog(OnnxLog&& other) = delete;
