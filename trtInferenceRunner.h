@@ -38,7 +38,7 @@ using namespace nvinfer1;
 using samplesCommon::SampleUniquePtr;
 
 inline const char* IN_NAME = "input"; 
-inline char* OUT_NAME = "output"; 
+inline const char* OUT_NAME = "output"; 
 inline constexpr int BATCH_SIZE = 1; 
 
 class TrtInferenceRunner {
@@ -48,8 +48,8 @@ private:
     std::shared_ptr<nvinfer1::IRuntime> m_runtime;      // The TensorRT runtime used to deserialize the engine
     std::shared_ptr<nvinfer1::ICudaEngine> m_engine;    // The TensorRT engine used to run the network
 
-    const char* m_onnx_name;                // The name of onnx model
-    std::vector<std::string> m_onnx_dirs;   // The path of onnx model
+    const char* m_onnx_name;                            // The name of onnx model
+    std::vector<std::string> m_onnx_dirs;               // The path of onnx model
 
 private:
     // Parses an ONNX model and creates a TensorRT network

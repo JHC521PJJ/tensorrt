@@ -1,3 +1,10 @@
+/*
+ * @Author: JHC521PJJ 
+ * @Date: 2023-08-15 12:27:11 
+ * @Last Modified by: JHC521PJJ
+ * @Last Modified time: 2023-08-15 12:34:25
+ */
+
 #include "inference.h"
 #include "imagePreprocess.h"
 #include "npyToVector.h"
@@ -60,6 +67,7 @@ void Inference::processOutput() {
             m_tinfer_output[i + c * 56 * 56] = (m_tinfer_output[i + c * 56 * 56] - m_teacher_mean[c]) / m_teacher_std[c]; 
         }
     }
+    
     auto vec_mean = meanOperation(m_tinfer_output, m_sinfer_output, m_aeinfer_output);
     std::vector<float> vec_mean_st = vec_mean[0];
     std::vector<float> vec_mean_ae = vec_mean[1];

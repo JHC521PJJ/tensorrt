@@ -1,3 +1,10 @@
+/*
+ * @Author: JHC521PJJ 
+ * @Date: 2023-08-15 12:26:21 
+ * @Last Modified by: JHC521PJJ
+ * @Last Modified time: 2023-08-15 12:28:31
+ */
+
 #include "inference.cuh"
 #include "imagePreprocess.cuh"
 #include "npyToVector.h"
@@ -7,7 +14,8 @@
 #include <omp.h>
 
 
-Inference::Inference(): m_batch_size(1), m_input_channel(3), m_output_channel(384),
+Inference::Inference(): 
+    m_batch_size(1), m_input_channel(3), m_output_channel(384),
     m_input_size(256), m_output_size(56) {
     init();
 }
@@ -32,7 +40,7 @@ Inference::~Inference() {
 }
 
 // Initialize member variables, read the onnx model, and allocate memory on the device 
-void Inference::init() {
+void Inference::init() noexcept {
     std::vector<float> vec_teacher_mean = npyToVector("/mnt/DataDisk02/home/pjj/anomaly_detection/EfficientAD-main/output/2/trainings/mvtec_loco/chip6/t_mean_quantiles.npy");
     std::vector<float> vec_teacher_std = npyToVector("/mnt/DataDisk02/home/pjj/anomaly_detection/EfficientAD-main/output/2/trainings/mvtec_loco/chip6/t_std_quantiles.npy");
     float q_st_start_quantiles = npyToValue("/mnt/DataDisk02/home/pjj/anomaly_detection/EfficientAD-main/output/2/trainings/mvtec_loco/chip6/q_st_start_quantiles.npy");
@@ -71,19 +79,19 @@ void Inference::init() {
 }
 
 // Image preprocessing on the GPU
-void Inference::processInput(cv::Mat& image) {
-    imagePreprocessingGpu(image, m_d_preprocess_output);
+void Inference::processInput(cv::Mat& image) noexcept {
+    imagePreprocessGpu(image, m_d_preprocess_output);
 }
 
 // TRT inference on the GPU
-void Inference::trtInfer() {
+void Inference::trtInfer() noexcept {
     m_teacher_infer.infer(m_d_preprocess_output, m_d_tinfer_output);
     m_student_infer.infer(m_d_preprocess_output, m_d_sinfer_output);
     m_ae_infer.infer(m_d_preprocess_output, m_d_aeinfer_output);
 }
 
 // Asynchronous infering by openMP
-void Inference::trtInferAsyn() {
+void Inference::trtInferAsyn() noexcept {
     omp_set_num_threads(3);
     #pragma omp sections
     {
@@ -103,7 +111,7 @@ void Inference::trtInferAsyn() {
 }
 
 // Processing the output on the GPU
-void Inference::processOutput() {
+void Inference::processOutput() noexcept {
     float max_element = 0.0f;
     resultTransformateGpu(
         m_d_tinfer_output, m_d_sinfer_output, m_d_aeinfer_output, 
@@ -116,12 +124,18 @@ void Inference::processOutput() {
         m_d_ae_start_quantiles,
         m_d_ae_end_quantiles,
         max_element);
-        
-    std::cout<< "Score: " << max_element << std::endl;
+    
+    sample::gLogInfo << "Anomaly score: " << max_element << " ";
+    if(max_element > 1.0) {
+        sample::gLogInfo << "[Defect]" << std::endl;
+    }
+    else {
+        sample::gLogInfo << "[Normal]" << std::endl;
+    }
 }
 
 // Inference
-void Inference::infer(cv::Mat& image) {
+void Inference::infer(cv::Mat& image) noexcept {
     processInput(image);
     // trtInfer();
     trtInferAsyn();

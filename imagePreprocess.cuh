@@ -15,6 +15,6 @@
 
 #include <opencv2/opencv.hpp>
 
-void imagePreprocessingGpu(cv::Mat& image, float* d_preprocess_output);
+void imagePreprocessGpu(cv::Mat& image, float* d_preprocess_output);
 
 #endif

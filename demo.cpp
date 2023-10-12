@@ -30,15 +30,15 @@ int main(int argc, char** argv) {
     for(int i = 0; i < vec_file.size(); ++i) {
         // Read imag
         cv::Mat image = cv::imread(vec_file[i]);
-        std::cout << vec_file[i] << std::endl;
+        sample::gLogInfo << "Image: " << vec_file[i] << std::endl;
 
         TimeCount::instance().start();
         // begin infer
         infer_runner.infer(image);
         
-        auto infer_time_count = TimeCount::instance().getTime();
-        sample::gLogInfo<< "Inference takes time: " << infer_time_count << "ms" << std::endl;
-        time_record.push_back(infer_time_count);
+        auto infer_time = TimeCount::instance().getTime();
+        sample::gLogInfo << "Inference takes time: " << infer_time << "ms" << std::endl;
+        time_record.push_back(infer_time);
     }
 
     auto time_sum = 0.0;
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
         time_sum += v;
     }
     auto time_avg = time_sum / time_record.size();
-    sample::gLogInfo<< "Average time: " << time_avg << "ms" << std::endl;
+    sample::gLogInfo << "Average time: " << time_avg << "ms" << std::endl;
 
     return 0;
 }

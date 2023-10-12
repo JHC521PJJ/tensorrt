@@ -1,3 +1,10 @@
+/*
+ * @Author: JHC521PJJ 
+ * @Date: 2023-08-15 12:26:08 
+ * @Last Modified by:   JHC521PJJ 
+ * @Last Modified time: 2023-08-15 12:26:08 
+ */
+
 #include "imagePreprocess.cuh"
 #include <cuda_runtime_api.h>
 
@@ -29,33 +36,6 @@ __global__ void toRGBKernel(unsigned char* d_input, const int width, const int h
         d_input[index + 2] = temp;
     }
 }
-
-// // The uchar image is converted to float
-// __global__ void convertToFloatKernel(unsigned char* d_input, float* d_output, 
-//     const int width, const int height) {
-//     const int col = threadIdx.x + blockIdx.x * blockDim.x;
-//     const int row = threadIdx.y + blockIdx.y * blockDim.y;
-//     const int index = (row * width + col) * 3;
-
-//     if (col < width && row < height) {
-//         d_output[index]     = (float)d_input[index] / 255.0f;
-//         d_output[index + 1] = (float)d_input[index + 1] / 255.0f;
-//         d_output[index + 2] = (float)d_input[index + 2] / 255.0f;
-//     }
-// }
-
-// // Normalize
-// __global__ void normalizeKernel(float* d_input, const int width, const int height) {
-//     const int col = threadIdx.x + blockIdx.x * blockDim.x;
-//     const int row = threadIdx.y + blockIdx.y * blockDim.y;
-//     const int index = (row * width + col) * 3;
-
-//     if (col < width && row < height) {
-//         d_input[index]     = (d_input[index] - 0.485f) / 0.229f;
-//         d_input[index + 1] = (d_input[index + 1] - 0.456f) / 0.224f;
-//         d_input[index + 2] = (d_input[index + 2] - 0.406f) / 0.225f;
-//     }
-// }
 
 // Normalize
 __global__ void normalizeKernel(unsigned char* d_input, float* d_output, 
@@ -89,7 +69,7 @@ __global__ void toVectorKernel(const float* d_input, float* d_output,
     }
 }
 
-void imagePreprocessingGpu(cv::Mat& image, float* d_preprocess_output) {
+void imagePreprocessGpu(cv::Mat& image, float* d_preprocess_output) {
     int old_width = image.cols;
     int old_height = image.rows;
     constexpr int new_width = 256;

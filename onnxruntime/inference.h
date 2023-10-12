@@ -1,8 +1,8 @@
 /*
  * @Author: JHC521PJJ 
  * @Date: 2023-07-31 21:43:44 
- * @Last Modified by:   JHC521PJJ 
- * @Last Modified time: 2023-07-31 21:43:44 
+ * @Last Modified by: JHC521PJJ
+ * @Last Modified time: 2023-08-15 12:30:38
  * 
  * https://github.com/JHC521PJJ/tensorrt
  */
@@ -19,15 +19,15 @@ public:
     using VecFloat = std::vector<float>;
 
 private:
-    int m_batch_size;                   // The batch size of input image 
-    int m_input_channel;                // The channels of input image
-    int m_output_channel;               // The channels of output image
-    int m_input_size;                   // The size of input image
-    int m_output_size;                  // The size of output image
+    int m_batch_size;                       // The batch size of input image 
+    int m_input_channel;                    // The channels of input image
+    int m_output_channel;                   // The channels of output image
+    int m_input_size;                       // The size of input image
+    int m_output_size;                      // The size of output image
     
-    OnnxInferenceRunner m_teacher_infer; // The Otr inference class of teacher networks
-    OnnxInferenceRunner m_student_infer; // The Otr inference class of student network
-    OnnxInferenceRunner m_ae_infer;      // The Otr inference class of auto encorder network
+    OnnxInferenceRunner m_teacher_infer;    // The Otr inference class of teacher networks
+    OnnxInferenceRunner m_student_infer;    // The Otr inference class of student network
+    OnnxInferenceRunner m_ae_infer;         // The Otr inference class of auto encorder network
 
     // Initializes temporary variables
     VecFloat m_teacher_mean; 

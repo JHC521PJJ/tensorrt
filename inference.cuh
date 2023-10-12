@@ -46,11 +46,11 @@ private:
     __device__ float m_d_ae_end_quantiles; 
 
 private:
-    void init();
-    void processInput(cv::Mat& image);
-    void processOutput();
-    void trtInfer();
-    void trtInferAsyn();
+    void init() noexcept;
+    void processInput(cv::Mat& image) noexcept;
+    void processOutput() noexcept;
+    void trtInfer() noexcept;
+    void trtInferAsyn() noexcept;
 
 public:
     Inference();
@@ -61,7 +61,7 @@ public:
     Inference& operator=(const Inference& other) = delete;
     Inference& operator=(Inference&& other) = delete;
 
-    void infer(cv::Mat& image);
+    void infer(cv::Mat& image) noexcept;
 };
 
 #endif

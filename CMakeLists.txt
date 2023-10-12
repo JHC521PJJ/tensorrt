@@ -41,7 +41,7 @@ target_link_libraries(process_gpu ${OpenCV_LIBS})
 target_link_libraries(process_gpu ${CNPY_DIR})
 set (CUDAEXTRA_LIBS ${CUDAEXTRA_LIBS} process_gpu)
 
-add_executable(test_infer main.cpp ${SAMPLES_COMMON_SOURCES})
+add_executable(test_infer demo.cpp ${SAMPLES_COMMON_SOURCES})
 
 
 include_directories(${CUDA_INCLUDE_DIRS})
